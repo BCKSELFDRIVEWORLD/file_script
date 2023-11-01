@@ -1,0 +1,60 @@
+import os
+import shutil
+
+class DosyaIslemleri:
+    def __init__(self, klasor_yollari, hedef_klasor):
+        self.klasor_yollari = klasor_yollari
+        self.hedef_klasor = hedef_klasor
+        self.dosyalar = {}
+        self.uzantilar = [".txt", ".yaml", "_150px.png", ".pbstream", ".pgm", ".png"]
+        self.kesilmis_dosyalar = set()  # Kesilmiş dosya adları setini sınıfın bir parçası olarak tanımlıyoruz.
+
+    def dosyalari_listele(self, dizin_yolu):
+        if os.path.exists(dizin_yolu) and os.path.isdir(dizin_yolu):
+            dosyalar = [os.path.splitext(dosya)[0] for dosya in os.listdir(dizin_yolu) if os.path.isfile(os.path.join(dizin_yolu, dosya))]
+            return dosyalar
+        else:
+            return []
+
+    def klasorlerdeki_dosyalari_tara(self):
+        for klasor_yolu in self.klasor_yollari:
+            self.dosyalar[klasor_yolu] = set(self.dosyalari_listele(klasor_yolu))
+
+    def ayni_dosyalari_bul(self):
+        for dosya_listesi in self.dosyalar.values():
+            self.kesilmis_dosyalar.update('_'.join(dosya.split('_')[:2]) for dosya in dosya_listesi)
+
+    def dosyalari_kopyala(self):
+        for dosya_adi in self.kesilmis_dosyalar:
+            for klasor_yolu in self.klasor_yollari:
+                if dosya_adi in self.dosyalar[klasor_yolu]:
+                    for uzanti in self.uzantilar:
+                        dosya = dosya_adi + uzanti
+                        dosya_kaynak_yolu = os.path.join(klasor_yolu, dosya)
+                        if os.path.exists(dosya_kaynak_yolu):
+                            dosya_hedef_klasor = os.path.join(self.hedef_klasor, dosya_adi)
+                            dosya_hedef_yolu = os.path.join(dosya_hedef_klasor, dosya)
+                            if not os.path.exists(dosya_hedef_klasor):
+                                os.makedirs(dosya_hedef_klasor, exist_ok=True)
+
+                            try:
+                                shutil.copy(dosya_kaynak_yolu, dosya_hedef_yolu)
+                                print(f"'{dosya}' dosyası kopyalandı.")
+                            except IOError as e:
+                                print(f"Hata! '{dosya}' dosyası kopyalanırken bir hata oluştu: {e}")
+
+# Dosya işlemleri için sınıfın örneklenmesi
+klasor_yollari = [
+    "/home/bck/maps_old/pgms",
+    "/home/bck/maps_old/pbstreams",
+    "/home/bck/maps_old/compressed",
+    "/home/bck/maps_old/pngs",
+    "/home/bck/maps_old"
+]
+
+hedef_klasor = "/home/bck/scripts_new"
+
+dosya_islemleri = DosyaIslemleri(klasor_yollari, hedef_klasor)
+dosya_islemleri.klasorlerdeki_dosyalari_tara()
+dosya_islemleri.ayni_dosyalari_bul()
+dosya_islemleri.dosyalari_kopyala()
